@@ -2,6 +2,9 @@
 *.xlsx
 *.xlsm
 
+# VBA Form binaries
+*.frx
+
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
