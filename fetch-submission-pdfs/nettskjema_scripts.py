@@ -8,11 +8,13 @@ from dotenv import load_dotenv
 apiURL = 'https://nettskjema.no/api/v2'
 headers = {}
 forms = {
-    "EBRAINS curation request form": 277393,
+    "EBRAINS curation request form": 386195,
+    "OLD EBRAINS curation request form": 277393,
     "EBRAINS Ethics Compliance Survey": 224765,
     "Request for version addition": 271758
 }
 prefixes = {
+    386195: 'CR',
     277393: 'CR',
     224765: 'EC',
     271758: 'VA'
@@ -24,13 +26,13 @@ rootdir = ""
 def getLatestSubmission(formdir):
     fpath = os.path.join(rootdir, formdir)
     files = os.listdir(fpath)
-    
+
     ref = None
     if files:
         ref = 0
         for f in files:
             if not f[0] == '.':
-                ref = f[3:9] if int(f[3:9]) > int(ref) else ref
+                ref = f[3:11] if int(f[3:11]) > int(ref) else ref
 
     return(ref)
 
@@ -40,14 +42,14 @@ def getContactPerson(subID):
     resp = rq.get(url=url, headers=headers).json()["answers"]
     contact = "_"
     for r in resp:
-        if r["questionId"] in [5936128, 4609360, 4509048]:
+        if r["questionId"] in [6632775, 5936128, 4609360, 4509048]:
             contact = r["textAnswer"]
             if " " in contact: contact = contact.split(' ')[-1].strip()
             return(contact)
 
     # Search separately because of overlapping field labels for first name and full name
     for r in resp:
-        if r["questionId"] == 4769485:
+        if r["questionId"] in [6632774, 4769485]:
             contact = r["textAnswer"]
             if " " in contact: contact = contact.split(' ')[-1].strip()
             return(contact)
@@ -76,8 +78,7 @@ def getSubmissions(formID, latest):
     url = '/'.join([apiURL, 'forms', str(formID), 'submissions?fields=submissionId'])
     if latest: url = url + '&fromSubmissionId=' + str(latest)
 
-    resp = rq.get(url=url, headers=headers)
-    resp = resp.json()
+    resp = rq.get(url=url, headers=headers).json() 
     subIDs = []
     for r in resp:
         subIDs.append(r["submissionId"])
@@ -95,14 +96,14 @@ def selection_changed(sel):
             c.value=False
 
 
-def init():  
+def init():
     load_dotenv()
     
     global rootdir
     rootdir = os.getcwd()
     if not rootdir.endswith('Nettskjema'):
         rootdir = rootdir[:rootdir.find('Nettskjema') + len('Nettskjema')]
-
+    
     global headers
     headers = {
         "Authorization": "Bearer " + os.getenv("SVC_TOKEN")
