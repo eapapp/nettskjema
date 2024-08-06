@@ -2,7 +2,7 @@ import requests as rq
 import os
 import ipywidgets as widgets
 from IPython.display import display
-from dotenv import load_dotenv
+import nettskjema_auth_client
 
 
 apiURL = 'https://nettskjema.no/api/v2'
@@ -78,7 +78,7 @@ def getSubmissions(formID, latest):
     url = '/'.join([apiURL, 'forms', str(formID), 'submissions?fields=submissionId'])
     if latest: url = url + '&fromSubmissionId=' + str(latest)
 
-    resp = rq.get(url=url, headers=headers).json() 
+    resp = rq.get(url=url, headers=headers).json()
     subIDs = []
     for r in resp:
         subIDs.append(r["submissionId"])
@@ -96,18 +96,15 @@ def selection_changed(sel):
             c.value=False
 
 
-def init():
-    load_dotenv()
-    
+def init():   
     global rootdir
     rootdir = os.getcwd()
     if not rootdir.endswith('Nettskjema'):
         rootdir = rootdir[:rootdir.find('Nettskjema') + len('Nettskjema')]
     
     global headers
-    headers = {
-        "Authorization": "Bearer " + os.getenv("SVC_TOKEN")
-    }
+    token = nettskjema_auth_client.get_oauth2_token()
+    headers = {"Authorization": "Bearer " + token}
 
     display(widgets.HTML(value='<h3>Please select the Nettskjema forms you would like to fetch the latest submissions from:</h3>'))
 
