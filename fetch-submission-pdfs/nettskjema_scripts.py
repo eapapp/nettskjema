@@ -3,9 +3,10 @@ import os
 import ipywidgets as widgets
 from IPython.display import display
 import nettskjema_auth_client
+import ndjson
 
 
-apiURL = 'https://nettskjema.no/api/v2'
+apiURL = 'https://api.nettskjema.no/v3/form'
 headers = {}
 forms = {
     "EBRAINS curation request form": 386195,
@@ -34,22 +35,24 @@ def getLatestSubmission(formdir):
             if not f[0] == '.':
                 ref = f[3:11] if int(f[3:11]) > int(ref) else ref
 
+    if type(ref)==str: ref = int(ref)
     return(ref)
 
 
 def getContactPerson(subID):
-    url = '/'.join([apiURL, 'submissions', str(subID)])
-    resp = rq.get(url=url, headers=headers).json()["answers"]
+    url = '/'.join([apiURL, 'submission', str(subID)])
+    headers.update({"accept": "application/json"})
+    resp = rq.get(url=url, headers=headers).json()["formAnswers"]
     contact = "_"
     for r in resp:
-        if r["questionId"] in [6632775, 5936128, 4609360, 4509048]:
+        if r["elementId"] in [5990407, 5990420, 5403627, 4170089, 4254977, 4254983]:
             contact = r["textAnswer"]
             if " " in contact: contact = contact.split(' ')[-1].strip()
             return(contact)
 
     # Search separately because of overlapping field labels for first name and full name
     for r in resp:
-        if r["questionId"] in [6632774, 4769485]:
+        if r["elementId"] in [4397996, 5990406]:
             contact = r["textAnswer"]
             if " " in contact: contact = contact.split(' ')[-1].strip()
             return(contact)
@@ -59,7 +62,8 @@ def getContactPerson(subID):
 
 def getSubmission(subID, formID):
 
-    url = '/'.join([apiURL, 'submissions', str(subID), 'pdf'])
+    url = '/'.join([apiURL, 'submission', str(subID), 'pdf'])
+    headers.update({"accept": "application/pdf"})
     resp = rq.get(url=url, headers=headers)
 
     contact = getContactPerson(subID)
@@ -75,13 +79,17 @@ def getSubmission(subID, formID):
 
 def getSubmissions(formID, latest):
 
-    url = '/'.join([apiURL, 'forms', str(formID), 'submissions?fields=submissionId'])
-    if latest: url = url + '&fromSubmissionId=' + str(latest)
-
-    resp = rq.get(url=url, headers=headers).json()
+    url = '/'.join([apiURL, str(formID), 'submission-metadata'])
+    headers.update({"accept": "application/x-ndjson"})
+    resp = rq.get(url=url, headers=headers)
+    if not resp.status_code == 200: print("Error:", resp.status_code, resp.reason)
+    data = ndjson.loads(resp.text)
     subIDs = []
-    for r in resp:
-        subIDs.append(r["submissionId"])
+    for d in data:
+        if latest:
+            if d["submissionId"] > latest: subIDs.append(d["submissionId"])
+        else:
+            subIDs.append(d["submissionId"])
 
     return(subIDs)
 
