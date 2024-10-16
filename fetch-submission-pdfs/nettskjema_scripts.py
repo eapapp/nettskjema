@@ -42,7 +42,7 @@ def getLatestSubmission(formdir):
 def getContactPerson(subID):
     url = '/'.join([apiURL, 'submission', str(subID)])
     headers.update({"accept": "application/json"})
-    resp = rq.get(url=url, headers=headers).json()["formAnswers"]
+    resp = rq.get(url=url, headers=headers).json()["answers"]
     contact = "_"
     for r in resp:
         if r["elementId"] in [5990407, 5990420, 5403627, 4170089, 4254977, 4254983]:
